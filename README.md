@@ -24,7 +24,9 @@ Projet Bachelor par Yohan DUMONT, Matteo HENRY et Norbert ONGOUE
 
 -suivant le niveau, boss ? ou vaiseaux spéciaux
 # IN PROGRESS
--création du vaisseau
+
 -importer une image de vaisseau(sprite)
--déplacement du vaisseau
+
 # DONE
+-création du vaisseau
+-déplacement du vaisseau
