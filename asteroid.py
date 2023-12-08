@@ -2,6 +2,10 @@ import pygame, sys
 import time
 from pygame.locals import *
 from random import randint
+from pygame.math import Vector2
+from utils import load_sprite
+from models import GameObject
+
 
 LARGEUR = 640
 HAUTEUR = 480
@@ -12,6 +16,10 @@ pygame.display.init()
 fenetre = pygame.display.set_mode((LARGEUR, HAUTEUR))
 fenetre.fill([0, 0, 0])
 
+
+class Spaceship(GameObject):
+    def __init__(self, position):
+        super().__init__(position, load_sprite("spaceship"), Vector2(0))
 
 class Balle:
     def __init__(self):

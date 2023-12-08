@@ -1,9 +1,6 @@
 # ProjetPython
-Projet de Bachelor par Yohan DUMONT, Matteo HENRY et Norbert ONGOUE
+Projet Bachelor par Yohan DUMONT, Matteo HENRY et Norbert ONGOUE
 # TO DO
--création du vaisseau
--importer une image de vaisseau(sprite)
--déplacement du vaisseau
 -colision entre le vaisseau et les balles
 -tir du vaiseau
 -disparition de la balle si tir dans balle
@@ -27,5 +24,7 @@ Projet de Bachelor par Yohan DUMONT, Matteo HENRY et Norbert ONGOUE
 
 -suivant le niveau, boss ? ou vaiseaux spéciaux
 # IN PROGRESS
-
+-création du vaisseau
+-importer une image de vaisseau(sprite)
+-déplacement du vaisseau
 # DONE
