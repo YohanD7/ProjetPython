@@ -1,77 +1,227 @@
-import pygame, sys
-import time
-from pygame.locals import *
+from typing import Any
+import pygame
+import sys
 from random import randint
-from pygame.math import Vector2
-from utils import load_sprite
-from models import GameObject
+import random
+import math
+from pygame.locals import *
 
+#Initialisation de Pygame
+pygame.init()
 
-LARGEUR = 640
-HAUTEUR = 480
-RAYON = 20
-NB_BALLES = 10
+#Paramètres du jeu
+WIDTH, HEIGHT = 800, 600
+FPS = 60
 
-pygame.display.init()
-fenetre = pygame.display.set_mode((LARGEUR, HAUTEUR))
-fenetre.fill([0, 0, 0])
+#Couleurs
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
 
+#Initialisation de la fenêtre
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Asteroids Game")
+clock = pygame.time.Clock()
 
-class Spaceship(GameObject):
-    def __init__(self, position):
-        super().__init__(position, load_sprite("spaceship"), Vector2(0))
-
-class Balle:
+#Classes
+class Player(pygame.sprite.Sprite):
     def __init__(self):
-        self.x = randint(0, LARGEUR)
-        self.y = randint(0, HAUTEUR)
-        self.dx = randint(2, 5)
-        self.dy = randint(2, 5)
-        self.couleur = (randint(0, 255), randint(0, 255), randint(0, 255))
-        self.taille = RAYON
-    #création de la balle
-    def dessine(self):
-        pygame.draw.circle(fenetre, self.couleur, (self.x, self.y), self.taille)
+        super().__init__()
+        self.image = pygame.Surface((50, 50))
+        self.image.fill(RED)
+        self.rect = self.image.get_rect()
+        self.rect.center = (WIDTH // 2, HEIGHT // 2)
+        self.speed = 5
+        self.shoot_delay = 250  #Delay entre les tirs en millisecondes
+        self.last_shot = pygame.time.get_ticks()
+    
 
-    def bouge(self):
-        #déplacement au spawn :
-        self.x += self.dx
-        self.y += self.dy
-        #rebondissemeents mur :
-        if self.y < self.taille or self.y > HAUTEUR - self.taille:
-            self.dy = -self.dy
-        if self.x < self.taille or self.x > LARGEUR - self.taille:
-            self.dx = -self.dx
-        #rebondissemeents balles : 
-        for balle in mon_sac_a_balles:
-            if (
-                (self.x - balle.x) ** 2 + (self.y - balle.y) ** 2
-            ) ** 0.5 < self.taille + balle.taille:
-                self.dx, balle.dx = balle.dx, self.dx
-                self.dy, balle.dy = balle.dy, self.dy
+    def shoot(self):
+            now = pygame.time.get_ticks()
+            if now - self.last_shot <= self.shoot_delay:
+                return
+            
+            position_souris = pygame.mouse.get_pos()
+            self.last_shot = now
+            
+            #vitesse bullets
+            speed_max = 10
+            vitesse_x = position_souris[0] - self.rect.centerx
+            vitesse_y = position_souris[1] - self.rect.centery
+            magnitude = math.sqrt(vitesse_x**2 + vitesse_y**2)
 
-#Balles, propriétés
-mon_sac_a_balles = []
-for _ in range(NB_BALLES):
-    new_ball = Balle()
-    mon_sac_a_balles.append(new_ball)
+            if magnitude > speed_max:
+                new_vector = ((vitesse_x/magnitude)*speed_max, (vitesse_y/magnitude)*speed_max)
+
+            bullets.add(Bullet(self.rect.centerx, self.rect.centery, new_vector[0], new_vector[1]))
+
+    def update(self):
+        keys = pygame.key.get_pressed()
+        mouse_btns = pygame.mouse.get_pressed()
+
+        #Initialiser les changements de position pour les déplacements en diagonale
+        dx = 0
+        dy = 0
+
+        if keys[K_LEFT]:
+            dx -= 1
+        if keys[K_RIGHT]:
+            dx += 1
+        if keys[K_UP]:
+            dy -= 1
+        if keys[K_DOWN]:
+            dy += 1
+
+        #Normaliser le vecteur de déplacement pour maintenir une vitesse constante en diagonale
+        if dx != 0 and dy != 0:
+            dx /= math.sqrt(2)
+            dy /= math.sqrt(2)
+
+        #Appliquer les changements de position au joueur
+        self.rect.x += int(dx * self.speed)
+        self.rect.y += int(dy * self.speed)
+
+        if mouse_btns[0]:
+            self.shoot()
+        
+        #Assurez-vous que le joueur reste dans l'écran
+        self.rect.x = max(0, min(self.rect.x, WIDTH - self.rect.width))
+        self.rect.y = max(0, min(self.rect.y, HEIGHT - self.rect.height))
 
 
+class Asteroid(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        taille=randint(15,40)
+        self.image = pygame.Surface((taille, taille))
+        self.image.fill(WHITE)
+        self.rect = self.image.get_rect()
+        self.vitesse_max = 5
+        self.vitesse_min = 2
+        self.vitesse_var_max = 2
+        self.vitesse_var_min = -2
 
-#NE PAS TOUCHER
-while True:
-    fenetre.fill([0, 0, 0])
 
-    for balle in mon_sac_a_balles:
-        balle.dessine()
-        balle.bouge()
+        #Choix aléatoire du côté d'où l'astéroïde va apparaître
+        side = random.choice(["left", "right", "top", "bottom"])
+        if side == "left":
+            self.rect.x = 0
+            self.rect.y = random.randrange(HEIGHT - self.rect.height)
+            self.speed_x = random.randint(self.vitesse_min, self.vitesse_max)
+            self.speed_y = random.randint(self.vitesse_var_min,  self.vitesse_var_max)
+        elif side == "right":
+            self.rect.x = WIDTH - self.rect.width
+            self.rect.y = random.randrange(HEIGHT - self.rect.height)
+            self.speed_x = -random.randint(self.vitesse_min, self.vitesse_max)
+            self.speed_y = random.randint(self.vitesse_var_min,  self.vitesse_var_max)
+        elif side == "top":
+            self.rect.x = random.randrange(WIDTH - self.rect.width)
+            self.rect.y = 0
+            self.speed_x = random.randint(self.vitesse_var_min,  self.vitesse_var_max)
+            self.speed_y = random.randint(self.vitesse_min, self.vitesse_max)                            
+        elif side == "bottom":
+            self.rect.x = random.randrange(WIDTH - self.rect.width)
+            self.rect.y = HEIGHT - self.rect.height
+            self.speed_x = random.randint(self.vitesse_var_min,  self.vitesse_var_max)
+            self.speed_y = -random.randint(self.vitesse_min, self.vitesse_max)
 
-    pygame.display.update()
+    def update(self):
+        self.rect.x += self.speed_x
+        self.rect.y += self.speed_y
+        if self.rect.y > HEIGHT or self.rect.x < 0 or self.rect.x > WIDTH:
+            self.kill()
+
+    def destroy(self):
+        self.image.fill(RED)
+
+
+class Bullet(pygame.sprite.Sprite): 
+    def __init__(self, x, y, dx, dy):
+        super().__init__()
+        self.image = pygame.Surface((5, 5))
+        self.image.fill(RED)
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.dx = dx
+        self.dy = dy
+
+    def update(self, asteroids_list):
+        self.rect.x += self.dx
+        self.rect.y += self.dy
+        pygame.draw.circle(screen, RED, (self.rect.x, self.rect.y), 5)
+        
+        if self.rect.x <= 0 or self.rect.x >= WIDTH or self.rect.y <= 0 or self.rect.y >= HEIGHT:
+            self.kill()
+        
+        hits = pygame.sprite.spritecollide(self, asteroids_list, True)
+        for asteroid_hit in hits:
+            asteroid_hit.destroy()
+
+    def destroy(self):
+        self.kill()
+
+         
+
+#Groupes de sprites
+all_sprites = pygame.sprite.Group()
+asteroids = pygame.sprite.Group()
+
+bullets = pygame.sprite.Group()
+
+#Création du joueur
+player = Player()
+all_sprites.add(player)
+
+#Création des astéroïdes
+asteroid_spawn_time = 100  #Temps initial entre les apparitions d'astéroïdes en millisecondes
+asteroid_last_spawn = pygame.time.get_ticks()
+
+#Boucle principale
+running = True
+while running:
     for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.display.quit()
-            sys.exit()
+        if event.type == QUIT:
+            running = False
 
-    time.sleep(0.05)
+    #Mise à jour des sprites
+    all_sprites.update()
 
 
+    #Gestion des collisions entre le joueur et les astéroïdes
+    hits = pygame.sprite.spritecollide(player, asteroids, False)
+    if hits:
+        print("Game Over!")
+        running = False
+
+    #Génération d'astéroïdes de plus en plus fréquemment
+    now = pygame.time.get_ticks()
+    if now - asteroid_last_spawn > asteroid_spawn_time:
+        asteroid = Asteroid()
+        all_sprites.add(asteroid)
+        asteroids.add(asteroid)
+        asteroid_last_spawn = now
+        #Réduire le temps entre les apparitions d'astéroïdes pour les prochaines générations
+        asteroid_spawn_time = max(300, asteroid_spawn_time - 5)
+
+    #Dessin sur l'écran
+    screen.fill((0, 0, 0))
+
+    
+    for bullet in bullets:
+        bullet.update(asteroids)
+        hits = pygame.sprite.spritecollide(bullet, asteroids, True)
+        if len(hits) > 0:
+            print(hits)
+
+    all_sprites.draw(screen)
+    
+
+    #Rafraîchissement de l'écran
+    pygame.display.flip()
+
+    #Contrôle de la fréquence d'images
+    clock.tick(FPS)
+
+#Quitter Pygame
+pygame.quit()
+sys.exit()
